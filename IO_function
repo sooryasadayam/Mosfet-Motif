@@ -1,0 +1,56 @@
+def ds_dt(t,S,P):
+    global i_a
+    global i_p
+    global Rmat_dict
+    Rmat_dict[""] = P[0]
+    Rmat_dict["R1kf"] = P[1]
+    Rmat_dict["R1kb"] = P[2]
+    Rmat_dict["R2kf"] = P[3]
+    Rmat_dict["R2kb"] = P[4]
+    Rmat_dict["R3kf"] = P[5]
+    Rmat_dict["R3kb"] = P[6]
+    Rmat_dict["R3kr"] = P[7]
+    global c
+    global Names_Rcnt
+    global Names_Rxn
+    MAT = np.zeros_like(c.Rmat)
+    # formula parsing MAT
+    for i in range(0, c.Rmat.shape[0]):
+        for j in range(0, c.Rmat.shape[1]):
+            temp = c.Rmat[i, j]
+            if ('+' in temp):
+                temp1 = temp.split('+')[0]
+                temp2 = temp.split('+')[1]
+                if ('-' in temp1):
+                    val1 = -1 * Rmat_dict[temp1.split('-')[1]]
+                else:
+                    val1 = Rmat_dict[temp1]
+                if ('-' in temp2):
+                    val2 = -1 * Rmat_dict[temp2.split('-')[1]]
+                else:
+                    val2 = Rmat_dict[temp2]
+                MAT[i, j] = val1 + val2
+            elif ('-' in temp):
+                MAT[i, j] = -1 * Rmat_dict[temp.split('-')[1]]
+            else:
+                MAT[i, j] = Rmat_dict[temp]
+    # Rmat_dict has an unordered parameter mapping
+    # params is the ordered set of parameter names
+    # params_value is the ordered set of parameter values
+    # formula parsing RXN
+    rxn_values = np.reshape(S,(7,))  #### This is where the S_vec goes,There's an adhoc Jugad of size changing here
+    Rxn_dict = dict(zip([i[0] for i in Names_Rxn], rxn_values))
+    rcnt_values = np.zeros_like(Names_Rcnt)
+    # formula parsing RCNT
+    for i in range(0, Names_Rcnt.shape[0]):
+        if ('*' in Names_Rcnt[i, 0]):
+            rcnt_values[i, 0] = Rxn_dict[Names_Rcnt[i, 0].split('*')[0]] * Rxn_dict[Names_Rcnt[i, 0].split('*')[1]]
+        else:
+            rcnt_values[i, 0] = Rxn_dict[Names_Rcnt[i, 0]]
+    #print(rxn_values)
+    #print(rcnt_values)
+    #print(MAT)
+    Rcnt_dict = dict(zip([i[0] for i in Names_Rcnt], rcnt_values))
+    ### dS_dt is being defined
+    dS_dt = np.dot(MAT,rcnt_values) + np.array([[i_a],[i_p],[0],[i_e],[0],[0],[0]])
+    return dS_dt
